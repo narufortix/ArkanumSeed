@@ -6,6 +6,8 @@ Un único archivo HTML. Sin servidor. Sin registro. Sin conexión. Funciona en c
 
 ![Preview](assets/preview.png)
 
+📄 **[Descargar guía de uso (PDF)](https://github.com/narufortix/ArkanumSeed/raw/main/assets/ArkanumSeed_Guia_de_Uso.pdf)**
+
 ---
 
 ## ¿Qué hace?
