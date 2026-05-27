@@ -702,8 +702,8 @@ function isReasonableBase64(v, maxLen = 8 * 1024 * 1024) {
 }
 function isStrongMasterKey(pw) {
   if (typeof pw !== 'string') return false;
-  const words = pw.trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 6 && pw.length >= 32) return true;
+  const words = pw.trim().split(/[\s\-]+/).filter(Boolean);
+  if (words.length >= 5 && pw.length >= 28) return true;
   let classes = 0;
   if (/[a-z]/.test(pw)) classes++;
   if (/[A-Z]/.test(pw)) classes++;
@@ -711,7 +711,7 @@ function isStrongMasterKey(pw) {
   if (/[^A-Za-z0-9\s]/.test(pw)) classes++;
   return pw.length >= 16 && classes >= 3;
 }
-function masterKeyMsg() { return 'La clave maestra debe tener mínimo 16 caracteres con variedad, o una frase de 6+ palabras aleatorias. No se permite una clave débil.'; }
+function masterKeyMsg() { return 'La clave maestra debe tener mínimo 16 caracteres con variedad (mayúsculas, números y símbolos), o usar la frase sugerida de 5 palabras. No se permite una clave débil.'; }
 function validateVaultContainer(d) {
   if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('Formato inválido');
   if (!d.meta || typeof d.meta !== 'object' || Array.isArray(d.meta)) throw new Error('Metadatos inválidos');
