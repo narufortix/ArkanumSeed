@@ -43,7 +43,7 @@ Un único archivo HTML. Sin servidor. Sin registro. Sin conexión. Funciona en c
 | A — Descarga directa | Descarga el HTML, úsalo offline |
 | B — HTML + .svault | HTML limpio, datos en fichero `.svault` separado |
 | C — HTML autocontenido | Datos cifrados embebidos en el propio HTML |
-| D — USB Alpine Linux | Producto de pago con entorno offline dedicado |
+
 
 ## Licencia
 
