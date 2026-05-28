@@ -4,6 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ArkánumSeed</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="ArkánumSeed — Bóveda offline para seed phrases">
+<meta property="og:description" content="Cifra y protege tus seed phrases con AES-256-GCM. 100% offline, sin servidor, sin registro. Un solo archivo HTML.">
+<meta property="og:image" content="https://narufortix.github.io/ArkanumSeed/assets/preview.png">
+<meta property="og:url" content="https://narufortix.github.io/ArkanumSeed/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ArkánumSeed — Bóveda offline para seed phrases">
+<meta name="twitter:description" content="Cifra y protege tus seed phrases con AES-256-GCM. 100% offline, sin servidor, sin registro. Un solo archivo HTML.">
+<meta name="twitter:image" content="https://narufortix.github.io/ArkanumSeed/assets/preview.png">
 <style>
 
 :root{
@@ -128,8 +137,9 @@ body:has(#save-banner[style*="flex"]) header { margin-top: 48px; }
 .wct{display:flex;gap:7px;margin-bottom:14px;}
 .wcb{flex:1;padding:9px;border-radius:8px;background:var(--bg);border:1px solid var(--brd2);color:var(--mut);cursor:pointer;font-family:var(--mono);font-size:.8rem;transition:all .2s;font-weight:700;}
 .wcb.on{background:var(--cy2);border-color:rgba(0,229,255,.4);color:var(--cy);}
-.sig{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;max-height:300px;overflow-y:auto;padding-right:3px;}
-.siwrap{position:relative;}.sinum{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:.66rem;color:var(--dim);pointer-events:none;}
+.sig{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;max-height:none;overflow:visible;padding-right:0;}
+.siwrap{position:relative;z-index:1;}
+.siwrap:focus-within{z-index:1000;}.sinum{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:.66rem;color:var(--dim);pointer-events:none;}
 .siwrap input{padding-left:26px;font-size:.8rem;}
 .egrid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-bottom:14px;}
 .ebtn{aspect-ratio:1;border-radius:8px;background:var(--bg);border:1px solid var(--brd2);cursor:pointer;font-size:1rem;transition:all .2s;display:grid;place-items:center;}
@@ -177,7 +187,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
 .xpub-box.shown-x .xpub-sovl{display:none!important;}
 /* BIP39 AUTOCOMPLETE */
 .ac-wrap{position:relative;}
-.ac-drop{position:absolute;top:calc(100% + 2px);left:0;right:0;background:var(--surf2);border:1px solid rgba(0,229,255,.3);border-radius:9px;max-height:160px;overflow-y:auto;z-index:60;box-shadow:0 8px 28px rgba(0,0,0,.5);display:none;}
+.ac-drop{position:absolute;top:calc(100% + 2px);left:0;right:0;background:var(--surf2);border:1px solid rgba(0,229,255,.3);border-radius:9px;max-height:160px;overflow-y:auto;z-index:10000;box-shadow:0 8px 28px rgba(0,0,0,.5);display:none;}
 .ac-item{padding:8px 12px;font-family:var(--mono);font-size:.78rem;cursor:pointer;color:var(--txt);}
 .ac-item:hover,.ac-item.ach{background:var(--cy2);color:var(--cy);}
 .siw-ok{border-color:rgba(0,255,157,.5)!important;}
@@ -274,7 +284,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
       <!-- Estado A: no hay bóveda → formulario de creación -->
       <div id="p1-form">
         <div class="fld"><label>Nueva clave maestra</label>
-          <div class="pw"><input type="password" id="cpw1" placeholder="Mínimo 8 caracteres..." autocomplete="new-password" oninput="chkStr(this,'cs1','cl1')"/><button class="eye" onclick="togEye('cpw1',this)">👁</button></div>
+          <div class="pw"><input type="password" id="cpw1" placeholder="Mínimo 16 caracteres o frase larga..." autocomplete="new-password" oninput="chkStr(this,'cs1','cl1')"/><button class="eye" onclick="togEye('cpw1',this)">👁</button></div>
           <div class="sbar"><div class="sfill" id="cs1"></div></div><div class="slbl" id="cl1"></div>
         </div>
         <div class="fld"><label>Confirmar clave</label>
@@ -503,8 +513,8 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
       ⚠️ Todas las frases semilla cifradas<br>⚠️ Todas las billeteras, xpub y notas<br>⚠️ Imágenes y configuración de la bóveda<br><br>
       <b>Solo recuperable si tienes un .svault exportado y tu clave maestra.</b>
     </div>
-    <div class="fld"><label>Escribe DESTRUIR para confirmar</label>
-      <input type="text" id="destroy-confirm" placeholder="DESTRUIR" autocomplete="off" oninput="checkDestroyConfirm()"/>
+    <div class="fld"><label>Confirmación visual</label>
+      <input type="text" id="destroy-confirm" placeholder="Opcional: DESTRUIR" autocomplete="off" oninput="checkDestroyConfirm()"/>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:16px;">
       <label style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.75rem;color:var(--mut);cursor:pointer;">
@@ -513,7 +523,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
     </div>
     <div class="mact">
       <button class="btn btn-s" onclick="closeM('mdestroy')">Cancelar</button>
-      <button class="btn btn-d" id="destroybtn" onclick="doDestroy()" disabled style="opacity:.4;">💣 Destruir todo</button>
+      <button type="button" class="btn btn-d" id="destroybtn" onclick="doDestroy()" style="opacity:1;">💣 Destruir y descargar HTML limpio</button>
     </div>
   </div>
 </div>
@@ -629,7 +639,7 @@ function secureRandInt(max) {
   return v % max;
 }
 function genPP() {
-  const n = 5;
+  const n = 6;
   const words = Array.from({length: n}, () => PASS_WORDS[secureRandInt(PASS_WORDS.length)]);
   const phrase = words.join('-');
   const bits   = Math.floor(Math.log2(PASS_WORDS.length) * n);
@@ -702,16 +712,19 @@ function isReasonableBase64(v, maxLen = 8 * 1024 * 1024) {
 }
 function isStrongMasterKey(pw) {
   if (typeof pw !== 'string') return false;
-  const words = pw.trim().split(/[\s\-]+/).filter(Boolean);
-  if (words.length >= 5 && pw.length >= 28) return true;
+  const clean = pw.trim();
+  if (!clean) return false;
+  const words = clean.split(/[\s\-]+/).filter(Boolean);
+  // Frase larga: válida aunque no mezcle símbolos. Evita fallos intermitentes con la clave sugerida.
+  if (words.length >= 6 && clean.length >= 28) return true;
   let classes = 0;
-  if (/[a-z]/.test(pw)) classes++;
-  if (/[A-Z]/.test(pw)) classes++;
-  if (/[0-9]/.test(pw)) classes++;
-  if (/[^A-Za-z0-9\s]/.test(pw)) classes++;
-  return pw.length >= 16 && classes >= 3;
+  if (/[a-z]/.test(clean)) classes++;
+  if (/[A-Z]/.test(clean)) classes++;
+  if (/[0-9]/.test(clean)) classes++;
+  if (/[^A-Za-z0-9\s]/.test(clean)) classes++;
+  return clean.length >= 16 && classes >= 3;
 }
-function masterKeyMsg() { return 'La clave maestra debe tener mínimo 16 caracteres con variedad (mayúsculas, números y símbolos), o usar la frase sugerida de 5 palabras. No se permite una clave débil.'; }
+function masterKeyMsg() { return 'La clave maestra debe tener mínimo 16 caracteres con variedad (mayúsculas, números y símbolos), o una frase larga de 6 palabras. No se permite una clave débil.'; }
 function validateVaultContainer(d) {
   if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('Formato inválido');
   if (!d.meta || typeof d.meta !== 'object' || Array.isArray(d.meta)) throw new Error('Metadatos inválidos');
@@ -1292,7 +1305,9 @@ function updateBip39Status() {
 function setWC(n, btn) {
   wc = n;
   document.querySelectorAll('.wcb').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on'); renderSI(n);
+  const target = btn || document.querySelector(`.wcb[data-n="${n}"]`);
+  if (target) target.classList.add('on');
+  renderSI(n);
 }
 function renderSI(n) {
   g('sigrn').innerHTML = Array.from({length:n}, (_,i) =>
@@ -1356,12 +1371,25 @@ async function saveWallet() {
   const name = g('nwname').value.trim(), network = g('nwnet').value, notes = g('nwnotes').value;
   const xpub = g('nwxpub').value.trim();
   if (!name) return toast('Introduce un nombre', 'err');
-  const inputs = document.querySelectorAll('.siw');
-  const words  = Array.from(inputs).map(i => i.value.trim().toLowerCase());
-  if (words.some(w => !w)) return toast('Completa todas las palabras semilla', 'err');
+  if (!_sessionKey) return toast('La sesión no está desbloqueada. Abre la bóveda de nuevo.', 'err');
+
+  // Solo los campos actuales del modal, no posibles .siw ocultos o antiguos.
+  const inputs = document.querySelectorAll('#sigrn .siw');
+  const words  = Array.from(inputs).map(i => i.value.trim().toLowerCase()).filter(Boolean);
+  if (words.length !== wc) return toast(`Completa las ${wc} palabras semilla`, 'err');
+
   const invalids = words.filter(w => !BIP39.includes(w));
-  if (invalids.length) return toast(`${invalids.length} palabra(s) no están en BIP39: ${invalids.join(', ')}`, 'err');
-  if (!(await bip39ChecksumValid(words))) return toast('Checksum BIP39 inválido: revisa el orden y la escritura de la semilla.', 'err');
+  if (invalids.length) {
+    const ok = confirm(`${invalids.length} palabra(s) no están en la lista BIP39 inglesa:\n\n${invalids.join(', ')}\n\n¿Quieres guardar igualmente esta semilla?`);
+    if (!ok) return toast('Guardado cancelado. Revisa la semilla.', 'err');
+  } else {
+    const checksumOk = await bip39ChecksumValid(words);
+    if (!checksumOk) {
+      const ok = confirm('Las palabras existen en BIP39, pero el checksum no coincide. Puede ser una semilla mal escrita, de otro estándar o introducida en orden incorrecto.\n\n¿Quieres guardarla igualmente?');
+      if (!ok) return toast('Guardado cancelado. Revisa orden y escritura.', 'err');
+    }
+  }
+
   setBusy('savewbtn', true);
   try {
     let img = null;
@@ -1383,6 +1411,9 @@ async function saveWallet() {
     g('nwname').value=''; g('nwnotes').value=''; g('nwxpub').value='';
     g('nwimg').value=''; g('nw-img-prev').style.display='none'; g('nw-img-lbl').style.display='inline';
     setWC(12, document.querySelector('.wcb[data-n="12"]'));
+  } catch(e) {
+    console.error(e);
+    toast(e && e.message ? e.message : 'No se pudo guardar la billetera', 'err');
   } finally { setBusy('savewbtn', false); }
 }
 
@@ -1709,33 +1740,89 @@ function clearStandaloneView() {
 
 // ── DESTROY ───────────────────────────────────────────────────
 function checkDestroyConfirm() {
-  const val = g('destroy-confirm').value;
+  // El botón no se bloquea nunca. El modal ya es la confirmación visual.
   const btn = g('destroybtn');
-  btn.disabled = val !== 'DESTRUIR'; btn.style.opacity = val === 'DESTRUIR' ? '1' : '.4';
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.removeAttribute('disabled'); }
+}
+function destroyPhraseOk() {
+  // Compatibilidad con versiones anteriores: ya no se usa para bloquear.
+  return true;
+}
+function buildCleanHTMLBlob() {
+  // Limpia el contenedor cifrado ANTES de serializar el HTML.
+  const el = g('svd');
+  if (el) el.textContent = '{}';
+
+  let cleanHtml = document.documentElement.outerHTML;
+  cleanHtml = cleanHtml.replace(/<script id="svd"[^>]*>[\s\S]*?<\/script>/,'<script id="svd" type="application/json">{}<\/script>');
+  cleanHtml = _resetHTMLOutput(cleanHtml);
+  return new Blob([cleanHtml], {type:'text/html'});
+}
+async function writeCleanHTMLIfPossible(blob) {
+  // Se mantiene por compatibilidad, pero destruir ya no depende de permisos de escritura.
+  if (!_fileHandle) return false;
+  try {
+    const writable = await _fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    return true;
+  } catch(e) {
+    _fileHandle = null;
+    return false;
+  }
 }
 async function doDestroy() {
-  const dl = g('destroy-dl').checked;
-  _sessionKey=null; wallets=[]; activeId=null; _xpubCache=null;
-  failCount=0; lockoutUntil=0; stopT(); stopXT(); clearLockoutTimer();
-  clearTimeout(_sessTimer); clearTimeout(_sessWarnTimer); hideSessWarn();
-  window.onbeforeunload=null;
-  const el = g('svd'); if(el) el.textContent='{}';
-  if (dl) {
-    await new Promise(r=>setTimeout(r,100));
-    let cleanHtml = document.documentElement.outerHTML;
-    cleanHtml = cleanHtml.replace(/<script id="svd"[^>]*>[\s\S]*?<\/script>/,'<script id="svd" type="application/json">{}<\/script>');
-    const blob=new Blob([cleanHtml],{type:'text/html'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download='ArkánumSeed-limpio.html'; a.click(); URL.revokeObjectURL(url);
+  const btn = g('destroybtn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.55'; btn.textContent = 'Destruyendo...'; }
+
+  try {
+    // 1) Borrar datos cifrados del HTML en memoria.
+    sd({});
+
+    // 2) Vaciar estado de sesión y datos visibles.
+    _sessionKey=null; wallets=[]; activeId=null; _xpubCache=null;
+    failCount=0; lockoutUntil=0;
+    try { stopT(); } catch(e) {}
+    try { stopXT(); } catch(e) {}
+    try { clearLockoutTimer(); } catch(e) {}
+    clearTimeout(_sessTimer); clearTimeout(_sessWarnTimer); hideSessWarn();
+    window.onbeforeunload=null;
+
+    // 3) Generar SIEMPRE una copia limpia. No dependemos de permisos del navegador.
+    const cleanBlob = buildCleanHTMLBlob();
+    downloadBlob(cleanBlob, 'ArkánumSeed-limpio.html');
+
+    // 4) Reset visual completo.
+    markSaved();
+    closeM('mdestroy');
+    const dc = g('destroy-confirm'); if (dc) dc.value='';
+    const svd = g('svd'); if (svd) svd.textContent='{}';
+    const wl = g('wlist'); if (wl) wl.innerHTML='';
+    const wc = g('wcnt'); if (wc) wc.textContent='0';
+    const sg = g('sgrid'); if (sg) sg.innerHTML='';
+    const xv = g('xpub-val'); if (xv) xv.textContent='—';
+    const nt = g('notes'); if (nt) nt.value='';
+    const wh = g('whero'); if (wh) wh.style.display='none';
+    const wd = g('wdet'); if (wd) wd.style.display='none';
+    const ev = g('emptyv'); if (ev) ev.style.display='block';
+    if (g('vault')) g('vault').style.display='none';
+    if (g('lock')) g('lock').style.display='flex';
+    if (g('lbtn')) g('lbtn').style.display='none';
+    if (g('expbtn')) g('expbtn').style.display='none';
+    if (g('sb-toggle')) g('sb-toggle').style.display='none';
+    if (g('mpill')) g('mpill').textContent='🔒 Bloqueada';
+    if (g('upw')) g('upw').value='';
+    if (g('file-info')) g('file-info').style.display='none';
+    updCreateTabState();
+    showTab(1);
+
+    toast('Bóveda destruida. Abre el archivo ArkánumSeed-limpio.html descargado.', 'ok');
+  } catch(e) {
+    console.error('Error al destruir bóveda:', e);
+    toast('Error al destruir bóveda: ' + (e && e.message ? e.message : 'desconocido'), 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💣 Destruir y descargar HTML limpio'; }
   }
-  closeM('mdestroy');
-  g('destroy-confirm').value=''; g('destroybtn').disabled=true; g('destroybtn').style.opacity='.4';
-  g('vault').style.display='none'; g('lock').style.display='flex';
-  g('lbtn').style.display='none'; g('expbtn').style.display='none';
-  g('sb-toggle').style.display='none';
-  g('mpill').textContent='🔒 Bloqueada'; g('upw').value='';
-  g('file-info').style.display='none';
-  showTab(1); toast('Bóveda destruida. Todos los datos eliminados.', 'ok');
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────
