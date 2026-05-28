@@ -211,6 +211,20 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
 .sv-wallet-info{flex:1;min-width:0;}
 .sv-wallet-name{font-size:.88rem;font-weight:600;}
 .sv-wallet-meta{font-family:var(--mono);font-size:.68rem;color:var(--mut);margin-top:2px;}
+/* SEARCH WALLETS */
+.wsearch{width:100%;background:var(--bg);border:1px solid var(--brd2);color:var(--txt);border-radius:9px;padding:8px 10px;font-family:var(--mono);font-size:.78rem;outline:none;margin-bottom:10px;transition:border-color .2s;}
+.wsearch:focus{border-color:rgba(0,229,255,.4);}
+/* SESSION TIMEOUT SELECTOR */
+.tout-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--brd);margin-top:6px;}
+.tout-row span{font-family:var(--mono);font-size:.68rem;color:var(--mut);white-space:nowrap;}
+.tout-row select{flex:1;background:var(--bg);border:1px solid var(--brd2);color:var(--mut);border-radius:7px;padding:4px 6px;font-family:var(--mono);font-size:.7rem;outline:none;cursor:pointer;}
+.tout-row select:focus{border-color:rgba(0,229,255,.4);}
+/* GENERIC CONFIRM MODAL */
+.mconf-msg{font-family:var(--mono);font-size:.8rem;color:var(--txt);line-height:1.8;margin-bottom:20px;white-space:pre-wrap;word-break:break-word;}
+/* EDIT SEED SECTION */
+.edit-seed-toggle{width:100%;background:transparent;border:1px dashed var(--brd2);color:var(--mut);border-radius:9px;padding:9px 12px;font-family:var(--mono);font-size:.75rem;cursor:pointer;text-align:left;transition:all .2s;margin-bottom:10px;}
+.edit-seed-toggle:hover{border-color:rgba(255,165,2,.4);color:var(--or);}
+.edit-seed-section{margin-bottom:14px;}
 </style>
 </head>
 <body>
@@ -351,12 +365,22 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
   <div class="vlay">
     <aside class="sidebar" id="sidebar">
       <div class="sbhdr"><h3>Billeteras</h3><span class="pill pill-c" style="font-size:.63rem" id="wcnt">0</span></div>
+      <input class="wsearch" id="wsearch" type="text" placeholder="🔍 Buscar..." autocomplete="off" oninput="filterWallets(this.value)">
       <div class="wlist" id="wlist"></div>
       <div class="sbfoot">
         <button class="btn btn-p" style="font-size:.83rem;" onclick="openM('mnew')">+ Nueva billetera</button>
         <button class="btn btn-s btn-sm" onclick="openM('mchpw')">🔑 Cambiar contraseña</button>
         <button class="btn btn-s btn-sm" onclick="openM('mexp')">📤 Exportar / Importar</button>
-        <button class="btn btn-d btn-sm" onclick="openM('mdestroy')" style="margin-top:6px;border-color:rgba(255,71,87,.4);">💣 Destruir bóveda</button>
+        <button class="btn btn-d btn-sm" onclick="openDestroyM()" style="margin-top:6px;border-color:rgba(255,71,87,.4);">💣 Destruir bóveda</button>
+        <div class="tout-row">
+          <span>⏱ Auto-bloqueo</span>
+          <select id="sess-sel" onchange="setSessTimeout(this.value)">
+            <option value="2">2 min</option>
+            <option value="5" selected>5 min</option>
+            <option value="10">10 min</option>
+            <option value="30">30 min</option>
+          </select>
+        </div>
       </div>
     </aside>
     <main class="mpanel">
@@ -370,6 +394,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
           <div><h2 id="dname">-</h2><p id="dmeta">-</p></div>
           <div class="phdr-r">
             <button class="btn btn-s btn-sm" id="rbtn" onclick="togReveal()">👁 Semilla</button>
+            <button class="btn btn-s btn-sm" id="copy-seed-btn" onclick="copySeed()" style="display:none;font-size:.75rem;">📋</button>
             <button class="btn btn-s btn-sm" id="xbtn" onclick="togRevealXpub()" style="display:none">🗝 xpub</button>
             <button class="btn btn-s btn-sm" onclick="openEdit()">✏️ Editar</button>
             <button class="btn btn-d btn-sm" onclick="delWallet()">🗑</button>
@@ -486,6 +511,19 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
       <input type="checkbox" id="ew-clear-img" style="width:auto;padding:0;"/>
       <label for="ew-clear-img" style="font-family:var(--mono);font-size:.73rem;color:var(--mut);cursor:pointer;">Eliminar imagen actual</label>
     </div>
+    <!-- Editar semilla -->
+    <button type="button" class="edit-seed-toggle" id="edit-seed-toggle" onclick="toggleEditSeed()">🔑 Editar frase semilla (avanzado)...</button>
+    <div class="edit-seed-section" id="edit-seed-section" style="display:none;">
+      <div class="rwarn" style="margin-bottom:12px;">⚠️ Solo cambia la semilla si cometiste un error al introducirla. La semilla anterior se reemplazará irreversiblemente.</div>
+      <div style="font-family:var(--mono);font-size:.73rem;color:var(--mut);margin-bottom:8px;">Número de palabras</div>
+      <div class="wct" style="margin-bottom:10px;">
+        <button type="button" class="wcb" data-ew="12" onclick="setEditWC(12,this)">12 palabras</button>
+        <button type="button" class="wcb" data-ew="18" onclick="setEditWC(18,this)">18 palabras</button>
+        <button type="button" class="wcb" data-ew="24" onclick="setEditWC(24,this)">24 palabras</button>
+      </div>
+      <div class="sig" id="edit-sigrn"></div>
+      <div id="edit-bip39-status" style="font-family:var(--mono);font-size:.68rem;color:var(--mut);min-height:14px;margin-bottom:4px;"></div>
+    </div>
     <div class="mact"><button class="btn btn-s" onclick="closeM('medit')">Cancelar</button><button class="btn btn-p" id="editwbtn" onclick="saveEdit()">Guardar</button></div>
   </div>
 </div>
@@ -513,17 +551,18 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
       ⚠️ Todas las frases semilla cifradas<br>⚠️ Todas las billeteras, xpub y notas<br>⚠️ Imágenes y configuración de la bóveda<br><br>
       <b>Solo recuperable si tienes un .svault exportado y tu clave maestra.</b>
     </div>
-    <div class="fld"><label>Confirmación visual</label>
-      <input type="text" id="destroy-confirm" placeholder="Opcional: DESTRUIR" autocomplete="off" oninput="checkDestroyConfirm()"/>
+    <div class="fld"><label>Confirma con tu clave maestra</label>
+      <div class="pw"><input type="password" id="destroy-pw" placeholder="Tu clave maestra actual..." autocomplete="off"/><button class="eye" onclick="togEye('destroy-pw',this)">👁</button></div>
     </div>
-    <div style="display:flex;gap:6px;margin-bottom:16px;">
+    <div class="err" id="destroy-err"></div>
+    <div style="display:flex;gap:6px;margin:12px 0 16px;">
       <label style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.75rem;color:var(--mut);cursor:pointer;">
         <input type="checkbox" id="destroy-dl" checked style="width:auto;padding:0;"/> Descargar HTML limpio tras destruir
       </label>
     </div>
     <div class="mact">
       <button class="btn btn-s" onclick="closeM('mdestroy')">Cancelar</button>
-      <button type="button" class="btn btn-d" id="destroybtn" onclick="doDestroy()" style="opacity:1;">💣 Destruir y descargar HTML limpio</button>
+      <button type="button" class="btn btn-d" id="destroybtn" onclick="doDestroy()">💣 Destruir bóveda</button>
     </div>
   </div>
 </div>
@@ -591,6 +630,18 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--cy);cursor:pointe
     <div id="stview-list"></div>
     <div class="mact" style="margin-top:10px;">
       <button class="btn btn-s" onclick="closeM('mstview')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmación genérica (reemplaza confirm() del navegador) -->
+<div class="mover" id="mconfirm">
+  <div class="modal" style="max-width:420px;">
+    <h3 id="mconf-title">Confirmar</h3>
+    <p class="mconf-msg" id="mconf-msg"></p>
+    <div class="mact">
+      <button class="btn btn-s" onclick="closeConfirm(false)">Cancelar</button>
+      <button class="btn btn-d" id="mconf-ok" onclick="closeConfirm(true)">Confirmar</button>
     </div>
   </div>
 </div>
@@ -780,15 +831,17 @@ let _xpubCache   = null;
 let _standaloneKey = null;
 let _standaloneWallets = [];
 let _standaloneKdf = null;
+let _searchFilter = '';
+let _editWC = 12;
 
 // Rate limiting
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_BASE  = 30;
 let failCount = 0; let lockoutUntil = 0; let lockoutTimer = null;
 
-// Session timeout
-const SESS_TIMEOUT = 5 * 60 * 1000;
-const SESS_WARN    = 30 * 1000;
+// Session timeout (configurable)
+let SESS_TIMEOUT = 5 * 60 * 1000;
+const SESS_WARN  = 30 * 1000;
 let _sessTimer = null; let _sessWarnTimer = null; let _sessWarnCnt = 30;
 
 const EMOJIS = ['🔑','🪙','💎','🛡️','⚡','🌐','🔐','🏦','🌙','🔥','❄️','🌊','🦊','🐉','🌿','💫','🎯','🧊','🔮','🏴‍☠️','⛓️','🗝️','🌍','🌑'];
@@ -1031,8 +1084,10 @@ async function doLock() {
   clearTimeout(_sessTimer); clearTimeout(_sessWarnTimer);
   g('vault').style.display='none'; g('lock').style.display='flex';
   g('lbtn').style.display='none'; g('expbtn').style.display='none';
-  g('sb-toggle').style.display='none';
-  g('mpill').textContent='🔒 Bloqueada';
+  if (g('sb-toggle')) g('sb-toggle').style.display='none';
+  if (g('mpill')) g('mpill').textContent='🔒 Bloqueada';
+  // Reset search filter on lock
+  _searchFilter = ''; const ws = g('wsearch'); if (ws) ws.value = '';
 
   // Limpiar TODOS los campos sensibles
   ['upw','cpw1','cpw2','cpold','cpnew1','cpnew2','svpw'].forEach(id => {
@@ -1096,15 +1151,26 @@ function toggleSidebar() {
 window.addEventListener('resize', updateSidebarButton);
 
 // ── WALLET LIST ───────────────────────────────────────────────
+function filterWallets(val) {
+  _searchFilter = (val || '').toLowerCase().trim();
+  renderList();
+}
 function renderList() {
   const list = g('wlist');
   g('wcnt').textContent = wallets.length;
+  const filtered = _searchFilter
+    ? wallets.filter(w => w.name.toLowerCase().includes(_searchFilter) || (w.network||'').toLowerCase().includes(_searchFilter))
+    : wallets;
   if (!wallets.length) {
     list.innerHTML = '<p style="font-family:var(--mono);font-size:.73rem;color:var(--dim);text-align:center;padding:18px 0">Sin billeteras</p>';
     g('emptyv').style.display='block'; g('wdet').style.display='none'; return;
   }
+  if (!filtered.length) {
+    list.innerHTML = '<p style="font-family:var(--mono);font-size:.73rem;color:var(--dim);text-align:center;padding:18px 0">Sin resultados</p>';
+    return;
+  }
   list.innerHTML = '';
-  wallets.forEach(w => {
+  filtered.forEach(w => {
     const btn = document.createElement('button');
     btn.className = 'wi' + (w.id === activeId ? ' on' : '');
     const safeImg = sanitizeImg(w.img); // Vuln 4: rechaza SVG y tipos no permitidos
@@ -1175,11 +1241,16 @@ async function confirmReveal() {
   const w = wallets.find(x => x.id === activeId); if(!w) return;
   await revealSG(w); showSeed(); startT();
 }
-function showSeed() { const b=g('sbox'); b.classList.remove('hidden'); b.classList.add('shown'); g('rbtn').innerHTML='🙈 Ocultar'; }
+function showSeed() {
+  const b=g('sbox'); b.classList.remove('hidden'); b.classList.add('shown');
+  g('rbtn').innerHTML='🙈 Ocultar';
+  const cb=g('copy-seed-btn'); if(cb) cb.style.display='inline-flex';
+}
 function hideSeed() {
   const b=g('sbox'); if(b){ b.classList.remove('shown'); b.classList.add('hidden'); }
   const grid = g('sgrid'); if(grid) grid.innerHTML = '';
   if(g('rbtn')) g('rbtn').innerHTML='👁 Semilla';
+  const cb=g('copy-seed-btn'); if(cb) cb.style.display='none';
 }
 function startT() {
   let r=120; g('stimer').style.display='inline'; g('ssecs').textContent=r;
@@ -1212,7 +1283,7 @@ function hideXpub() {
 }
 async function copyXpub() {
   const w = wallets.find(x => x.id === activeId); if(!w || !w.encX) return;
-  if (!confirm('Copiar al portapapeles puede dejar rastros en el sistema o en otras apps. ¿Copiar xpub igualmente?')) return;
+  if (!await showConfirm('Copiar xpub al portapapeles', 'Copiar puede dejar rastros en el sistema o en apps de portapapeles.\n\nEl portapapeles se limpiará en 30 segundos.\n\n¿Continuar?', '📋 Copiar xpub', false)) return;
   try {
     const d = ld();
     const xpub = _xpubCache || await svDecrypt(w.encX, _sessionKey, d && d.meta && d.meta.kdf);
@@ -1236,6 +1307,54 @@ function saveNotes() {
     w.encN = await svEncrypt(g('notes').value, _sessionKey);
     await saveVD();
   }, 900);
+}
+
+// ── CONFIRM MODAL (reemplaza confirm() nativo) ────────────────
+let _confirmResolve = null;
+function showConfirm(title, msg, okLabel, danger) {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    g('mconf-title').textContent = title;
+    g('mconf-msg').textContent = msg;
+    const okBtn = g('mconf-ok');
+    okBtn.textContent = okLabel || 'Confirmar';
+    okBtn.className = 'btn ' + (danger === false ? 'btn-p' : 'btn-d');
+    openM('mconfirm');
+  });
+}
+function closeConfirm(result) {
+  closeM('mconfirm');
+  if (_confirmResolve) { _confirmResolve(!!result); _confirmResolve = null; }
+}
+
+// ── COPY SEED ─────────────────────────────────────────────────
+async function copySeed() {
+  const w = wallets.find(x => x.id === activeId); if(!w) return;
+  const ok = await showConfirm('Copiar semilla al portapapeles',
+    'Copiar al portapapeles puede dejar rastros en el sistema o en otras apps.\n\nEl portapapeles se limpiará automáticamente en 30 segundos.\n\n¿Continuar?',
+    '📋 Copiar semilla', false);
+  if (!ok) return;
+  try {
+    const d = ld();
+    const words = (await svDecrypt(w.encS, _sessionKey, d && d.meta && d.meta.kdf)).split(' ').filter(Boolean);
+    await navigator.clipboard.writeText(words.join(' '));
+    toast('Semilla copiada — se limpiará en 30s ✓', 'ok');
+    setTimeout(async () => { try { await navigator.clipboard.writeText(''); } catch(_){} }, 30000);
+  } catch(e) { toast('Error al copiar semilla', 'err'); }
+}
+
+// ── SESSION TIMEOUT CONFIGURABLE ─────────────────────────────
+function setSessTimeout(mins) {
+  const m = parseInt(mins) || 5;
+  SESS_TIMEOUT = m * 60 * 1000;
+  if (_sessionKey) { clearTimeout(_sessTimer); clearTimeout(_sessWarnTimer); resetSessionTimer(); }
+}
+
+// ── OPEN DESTROY MODAL ────────────────────────────────────────
+function openDestroyM() {
+  const dp = g('destroy-pw'); if (dp) dp.value = '';
+  hideErr('destroy-err');
+  openM('mdestroy');
 }
 
 // ── BIP39 AUTOCOMPLETE ────────────────────────────────────────
@@ -1264,7 +1383,7 @@ function acSelect(el, word) {
   inp.value = word;
   inp.classList.remove('siw-err'); inp.classList.add('siw-ok');
   wrap.querySelector('.ac-drop').style.display = 'none';
-  const all = [...document.querySelectorAll('.siw')];
+  const all = [...document.querySelectorAll('#sigrn .siw')];
   const idx = all.indexOf(inp);
   if (idx < all.length - 1) all[idx+1].focus();
   updateBip39Status();
@@ -1290,7 +1409,7 @@ function acKey(e, inp) {
   } else if (e.key === 'Escape') { drop.style.display='none'; }
 }
 function updateBip39Status() {
-  const inputs = [...document.querySelectorAll('.siw')];
+  const inputs = [...document.querySelectorAll('#sigrn .siw')];
   if (!inputs.length) return;
   const filled = inputs.filter(i => i.value.trim());
   const valid  = inputs.filter(i => BIP39.includes(i.value.trim().toLowerCase()));
@@ -1380,12 +1499,16 @@ async function saveWallet() {
 
   const invalids = words.filter(w => !BIP39.includes(w));
   if (invalids.length) {
-    const ok = confirm(`${invalids.length} palabra(s) no están en la lista BIP39 inglesa:\n\n${invalids.join(', ')}\n\n¿Quieres guardar igualmente esta semilla?`);
+    const ok = await showConfirm('Palabras no BIP39',
+      `${invalids.length} palabra(s) no están en la lista BIP39 inglesa:\n${invalids.join(', ')}\n\n¿Guardar igualmente esta semilla?`,
+      '⚠️ Guardar de todos modos');
     if (!ok) return toast('Guardado cancelado. Revisa la semilla.', 'err');
   } else {
     const checksumOk = await bip39ChecksumValid(words);
     if (!checksumOk) {
-      const ok = confirm('Las palabras existen en BIP39, pero el checksum no coincide. Puede ser una semilla mal escrita, de otro estándar o introducida en orden incorrecto.\n\n¿Quieres guardarla igualmente?');
+      const ok = await showConfirm('Checksum BIP39 incorrecto',
+        'Las palabras existen en BIP39, pero el checksum no coincide.\nPuede ser una semilla mal escrita, de otro estándar o introducida en orden incorrecto.\n\n¿Guardar igualmente?',
+        '⚠️ Guardar de todos modos');
       if (!ok) return toast('Guardado cancelado. Revisa orden y escritura.', 'err');
     }
   }
@@ -1418,7 +1541,7 @@ async function saveWallet() {
 }
 
 async function delWallet() {
-  if (!confirm('¿Eliminar esta billetera permanentemente?')) return;
+  if (!await showConfirm('Eliminar billetera', '¿Eliminar esta billetera permanentemente?\nEsta acción no se puede deshacer.', '🗑 Eliminar')) return;
   wallets = wallets.filter(w => w.id !== activeId); activeId = null;
   await saveVD(); renderList();
   if(wallets.length) selW(wallets[0].id);
@@ -1443,6 +1566,18 @@ async function openEdit() {
   if (editImg) { prev.src=editImg; prev.style.display='block'; lbl.style.display='none'; }
   else { prev.src=''; prev.style.display='none'; lbl.style.display='inline'; }
   g('ewimg').value=''; g('ew-clear-img').checked=false;
+  // Seed editing: reset section, pre-populate words
+  const sec = g('edit-seed-section'); if(sec) sec.style.display='none';
+  const tog = g('edit-seed-toggle'); if(tog) tog.textContent='🔑 Editar frase semilla (avanzado)...';
+  _editWC = w.words || 12;
+  setEditWC(_editWC);
+  try {
+    const d = ld();
+    const seedWords = (await svDecrypt(w.encS, _sessionKey, d && d.meta && d.meta.kdf)).split(' ').filter(Boolean);
+    const inputs = document.querySelectorAll('#edit-sigrn input');
+    inputs.forEach((inp, i) => { if(seedWords[i]) { inp.value=seedWords[i]; inp.classList.add('siw-ok'); } });
+    updateEditBip39Status();
+  } catch(_) {}
   openM('medit');
 }
 async function saveEdit() {
@@ -1451,17 +1586,126 @@ async function saveEdit() {
   try {
     w.name    = g('ename').value.trim() || w.name;
     w.network = g('enet').value; w.emoji = edE;
+    const d = ld(); const kdf = d && d.meta && d.meta.kdf;
     const xpub = g('ewxpub').value.trim();
-    w.encX = xpub ? await svEncrypt(xpub, _sessionKey) : null;
+    w.encX = xpub ? await svEncrypt(xpub, _sessionKey, kdf) : null;
     if (g('ew-clear-img').checked) { w.img = null; }
     else {
       const imgFile = g('ewimg').files[0];
       if (imgFile) w.img = await fileToBase64(imgFile);
     }
+    // Guardar nueva semilla solo si la sección está visible (usuario la editó)
+    const sec = g('edit-seed-section');
+    if (sec && sec.style.display !== 'none') {
+      const editInputs = document.querySelectorAll('#edit-sigrn input');
+      const newWords = Array.from(editInputs).map(i => i.value.trim().toLowerCase()).filter(Boolean);
+      if (newWords.length === _editWC) {
+        const invalids = newWords.filter(ww => !BIP39.includes(ww));
+        if (invalids.length) {
+          const ok = await showConfirm('Palabras no BIP39',
+            `${invalids.length} palabra(s) no BIP39:\n${invalids.join(', ')}\n\n¿Guardar igualmente?`,
+            '⚠️ Guardar de todos modos');
+          if (!ok) { setBusy('editwbtn', false); return; }
+        }
+        w.encS = await svEncrypt(newWords.join(' '), _sessionKey, kdf);
+        w.words = _editWC;
+        renderSPH(_editWC);
+      } else {
+        toast(`Completa las ${_editWC} palabras semilla para guardar`, 'err');
+        setBusy('editwbtn', false); return;
+      }
+    }
     await saveVD(); renderList(); selW(w.id); closeM('medit');
     toast('Cambios guardados ✓', 'ok');
     autoSaveHTML();
   } finally { setBusy('editwbtn', false); }
+}
+
+// ── EDIT SEED ─────────────────────────────────────────────────
+function toggleEditSeed() {
+  const sec = g('edit-seed-section');
+  const tog = g('edit-seed-toggle');
+  if (!sec) return;
+  const open = sec.style.display !== 'none';
+  sec.style.display = open ? 'none' : 'block';
+  if (tog) tog.textContent = open ? '🔑 Editar frase semilla (avanzado)...' : '🔑 Ocultar edición de semilla';
+}
+function setEditWC(n, btn) {
+  _editWC = n;
+  document.querySelectorAll('#edit-seed-section .wcb').forEach(b => b.classList.remove('on'));
+  const target = btn || document.querySelector(`.wcb[data-ew="${n}"]`);
+  if (target) target.classList.add('on');
+  renderEditSI(n);
+}
+function renderEditSI(n) {
+  const c = g('edit-sigrn'); if(!c) return;
+  c.innerHTML = Array.from({length:n}, (_,i) =>
+    `<div class="siwrap ac-wrap" style="z-index:1;">
+       <span class="sinum">${i+1}</span>
+       <input type="text" class="edit-siw siw-edit" placeholder="palabra" autocomplete="off" spellcheck="false"
+         oninput="acEditBip39(this)" onkeydown="acEditKey(event,this)"
+         onfocus="acEditBip39(this)"
+         onblur="setTimeout(()=>{const d=this.parentElement.querySelector('.ac-drop');if(d)d.style.display='none'},200)"/>
+       <div class="ac-drop"></div>
+     </div>`).join('');
+}
+function acEditBip39(inp) {
+  const val = inp.value.toLowerCase().trim();
+  const wrap = inp.closest('.ac-wrap');
+  if (!wrap) return;
+  const drop = wrap.querySelector('.ac-drop');
+  inp.classList.remove('siw-ok','siw-err');
+  if (val && BIP39.includes(val)) inp.classList.add('siw-ok');
+  else if (val.length >= 3) inp.classList.add('siw-err');
+  if (!val || val.length < 2) { if(drop) drop.style.display='none'; updateEditBip39Status(); return; }
+  const matches = BIP39.filter(w => w.startsWith(val)).slice(0, 8);
+  if (!matches.length || (matches.length === 1 && matches[0] === val)) { if(drop) drop.style.display='none'; updateEditBip39Status(); return; }
+  if (drop) {
+    drop.innerHTML = matches.map(w => `<div class="ac-item" onmousedown="acEditSelect(this,'${w}')">${w}</div>`).join('');
+    drop.style.display = 'block';
+  }
+  updateEditBip39Status();
+}
+function acEditSelect(el, word) {
+  const wrap = el.closest('.ac-wrap');
+  const inp = wrap.querySelector('input');
+  inp.value = word;
+  inp.classList.remove('siw-err'); inp.classList.add('siw-ok');
+  wrap.querySelector('.ac-drop').style.display = 'none';
+  const all = [...document.querySelectorAll('#edit-sigrn input')];
+  const idx = all.indexOf(inp);
+  if (idx < all.length - 1) all[idx+1].focus();
+  updateEditBip39Status();
+}
+function acEditKey(e, inp) {
+  const wrap = inp.closest('.ac-wrap');
+  if (!wrap) return;
+  const drop = wrap.querySelector('.ac-drop');
+  if (!drop || drop.style.display === 'none') return;
+  const items = drop.querySelectorAll('.ac-item');
+  const sel = drop.querySelector('.ach');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = sel ? (sel.nextElementSibling || items[0]) : items[0];
+    if(sel) sel.classList.remove('ach'); if(next) next.classList.add('ach');
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = sel ? (sel.previousElementSibling || items[items.length-1]) : items[items.length-1];
+    if(sel) sel.classList.remove('ach'); if(prev) prev.classList.add('ach');
+  } else if (e.key === 'Enter' || e.key === 'Tab') {
+    const cur = drop.querySelector('.ach') || items[0];
+    if (cur) { e.preventDefault(); acEditSelect(cur, cur.textContent); }
+  } else if (e.key === 'Escape') { drop.style.display='none'; }
+}
+function updateEditBip39Status() {
+  const inputs = [...document.querySelectorAll('#edit-sigrn input')];
+  if (!inputs.length) return;
+  const filled = inputs.filter(i => i.value.trim());
+  const valid  = inputs.filter(i => BIP39.includes(i.value.trim().toLowerCase()));
+  const el = g('edit-bip39-status'); if (!el) return;
+  if (!filled.length) { el.textContent=''; return; }
+  const color = valid.length === inputs.length ? '#00ff9d' : '#ff4757';
+  el.innerHTML = `<span style="color:${color}">${valid.length}/${inputs.length} palabras BIP39 válidas</span>`;
 }
 
 // ── RESET HTML OUTPUT ─────────────────────────────────────────
@@ -1520,7 +1764,8 @@ function doExport() {
 function doImport(inp) {
   const file = inp.files[0]; if(!file) return;
   if (file.size > 8 * 1024 * 1024) { inp.value=''; return toast('Archivo demasiado grande. Máximo 8 MB.', 'err'); }
-  if(!confirm('ATENCIÓN: Importar reemplazará todos los datos actuales. ¿Continuar?')){ inp.value=''; return; }
+  const impOk = await showConfirm('Importar bóveda', 'ATENCIÓN: Importar reemplazará todos los datos actuales de la bóveda.\nEsta acción no se puede deshacer.\n\n¿Continuar?', '⬆️ Importar');
+  if(!impOk){ inp.value=''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -1690,6 +1935,15 @@ async function showStandaloneView(walletList, meta) {
   } else {
     list.innerHTML = walletList.map((w,i) => {
       const placeholder = Array.from({length:Number(w.words)||12}, (_,j) => `<div class="sw"><span class="snum">${p2(j+1)}</span><span>••••••</span></div>`).join('');
+      const xpubSection = w.encX ? `
+        <div style="width:100%;margin-top:10px;">
+          <div style="font-family:var(--mono);font-size:.68rem;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;">xpub / zpub</div>
+          <div class="xpub-box hidden-x" id="sv-xp-${i}" style="margin-bottom:8px;font-size:.7rem;min-height:42px;">
+            <div id="sv-xv-${i}">—</div>
+            <div class="xpub-sovl"><p>🔒 xpub cifrada<br><span style="font-size:.66rem">Pulsa "xpub"</span></p></div>
+          </div>
+          <div style="display:flex;gap:7px;"><button class="btn btn-s btn-sm" style="font-size:.72rem;" onclick="svToggleXpub(${i})" id="sv-xbtn-${i}">🗝 xpub</button></div>
+        </div>` : '';
       return `<div class="sv-wallet-card" style="flex-direction:column;align-items:flex-start;gap:12px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;gap:10px;width:100%;">
           ${sanitizeImg(w.img) ? `<div class="wico"><img src="${sanitizeImg(w.img)}" alt=""/></div>` : `<div class="wico">${esc(w.emoji||'🔑')}</div>`}
@@ -1703,6 +1957,7 @@ async function showStandaloneView(walletList, meta) {
           <div class="sgrid" style="filter:blur(6px);user-select:none;pointer-events:none;" id="sv-sg-${i}">${placeholder}</div>
           <div style="display:flex;gap:7px;margin-top:8px;"><button class="btn btn-s btn-sm" style="font-size:.72rem;" onclick="svToggle(${i})">👁 Mostrar semilla</button></div>
         </div>
+        ${xpubSection}
       </div>`;
     }).join('');
   }
@@ -1731,74 +1986,91 @@ async function svToggle(idx) {
     } catch(e) { toast('Error al descifrar semilla', 'err'); }
   } else svClearGrid(idx);
 }
+const _svXTimers = {};
+async function svToggleXpub(idx) {
+  const box = g('sv-xp-'+idx); const btn = g('sv-xbtn-'+idx); if (!box) return;
+  const hidden = box.classList.contains('hidden-x');
+  if (hidden) {
+    const w = _standaloneWallets[idx]; if(!w || !w.encX || !_standaloneKey) return;
+    try {
+      const xpub = await svDecrypt(w.encX, _standaloneKey, _standaloneKdf);
+      g('sv-xv-'+idx).textContent = xpub;
+      box.classList.remove('hidden-x'); box.classList.add('shown-x');
+      if (btn) btn.innerHTML='🙈 Ocultar (2min)';
+      clearTimeout(_svXTimers[idx]);
+      _svXTimers[idx] = setTimeout(() => {
+        box.classList.remove('shown-x'); box.classList.add('hidden-x');
+        g('sv-xv-'+idx).textContent='—';
+        if (btn) btn.innerHTML='🗝 xpub';
+      }, 2*60*1000);
+    } catch(e) { toast('Error al descifrar xpub', 'err'); }
+  } else {
+    clearTimeout(_svXTimers[idx]);
+    box.classList.remove('shown-x'); box.classList.add('hidden-x');
+    g('sv-xv-'+idx).textContent='—';
+    if (btn) btn.innerHTML='🗝 xpub';
+  }
+}
 function clearStandaloneView() {
   Object.keys(_svTimers).forEach(k => clearTimeout(_svTimers[k]));
   Object.keys(_svTimers).forEach(k => delete _svTimers[k]);
+  Object.keys(_svXTimers).forEach(k => clearTimeout(_svXTimers[k]));
+  Object.keys(_svXTimers).forEach(k => delete _svXTimers[k]);
   const list = g('stview-list'); if(list) list.innerHTML='';
   _standaloneKey=null; _standaloneWallets=[]; _standaloneKdf=null;
 }
 
 // ── DESTROY ───────────────────────────────────────────────────
-function checkDestroyConfirm() {
-  // El botón no se bloquea nunca. El modal ya es la confirmación visual.
-  const btn = g('destroybtn');
-  if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.removeAttribute('disabled'); }
-}
-function destroyPhraseOk() {
-  // Compatibilidad con versiones anteriores: ya no se usa para bloquear.
-  return true;
-}
 function buildCleanHTMLBlob() {
-  // Limpia el contenedor cifrado ANTES de serializar el HTML.
-  const el = g('svd');
-  if (el) el.textContent = '{}';
-
+  const el = g('svd'); if (el) el.textContent = '{}';
   let cleanHtml = document.documentElement.outerHTML;
   cleanHtml = cleanHtml.replace(/<script id="svd"[^>]*>[\s\S]*?<\/script>/,'<script id="svd" type="application/json">{}<\/script>');
   cleanHtml = _resetHTMLOutput(cleanHtml);
   return new Blob([cleanHtml], {type:'text/html'});
 }
-async function writeCleanHTMLIfPossible(blob) {
-  // Se mantiene por compatibilidad, pero destruir ya no depende de permisos de escritura.
-  if (!_fileHandle) return false;
-  try {
-    const writable = await _fileHandle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-    return true;
-  } catch(e) {
-    _fileHandle = null;
-    return false;
-  }
-}
 async function doDestroy() {
+  const pw = g('destroy-pw') ? g('destroy-pw').value.trim() : '';
+  if (!pw) { showErr('destroy-err', 'Introduce tu clave maestra para confirmar.'); return; }
+
   const btn = g('destroybtn');
-  if (btn) { btn.disabled = true; btn.style.opacity = '.55'; btn.textContent = 'Destruyendo...'; }
+  if (btn) { btn.disabled = true; btn.style.opacity = '.55'; btn.textContent = 'Verificando...'; }
+  hideErr('destroy-err');
 
+  // Fase 1: verificar clave maestra (el botón siempre está activo, pero exige la clave)
   try {
-    // 1) Borrar datos cifrados del HTML en memoria.
-    sd({});
+    const d = ld();
+    if (!d || !d.meta) throw new Error('no_vault');
+    const testKey = await crypto.subtle.importKey('raw', ENC.encode(pw), 'PBKDF2', false, ['deriveKey']);
+    await svDecrypt(d.meta.verToken, testKey, d.meta.kdf); // lanza OperationError si es incorrecta
+  } catch(e) {
+    const msg = (e && e.message === 'no_vault') ? 'No hay bóveda activa.' : 'Clave maestra incorrecta.';
+    showErr('destroy-err', msg);
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💣 Destruir bóveda'; }
+    return;
+  }
 
-    // 2) Vaciar estado de sesión y datos visibles.
+  // Fase 2: destrucción (verificación superada)
+  if (btn) btn.textContent = 'Destruyendo...';
+  try {
+    sd({});
     _sessionKey=null; wallets=[]; activeId=null; _xpubCache=null;
     failCount=0; lockoutUntil=0;
-    try { stopT(); } catch(e) {}
-    try { stopXT(); } catch(e) {}
-    try { clearLockoutTimer(); } catch(e) {}
+    try { stopT(); } catch(_) {}
+    try { stopXT(); } catch(_) {}
+    try { clearLockoutTimer(); } catch(_) {}
     clearTimeout(_sessTimer); clearTimeout(_sessWarnTimer); hideSessWarn();
     window.onbeforeunload=null;
+    _searchFilter=''; const ws=g('wsearch'); if(ws) ws.value='';
 
-    // 3) Generar SIEMPRE una copia limpia. No dependemos de permisos del navegador.
     const cleanBlob = buildCleanHTMLBlob();
     downloadBlob(cleanBlob, 'ArkánumSeed-limpio.html');
 
-    // 4) Reset visual completo.
     markSaved();
     closeM('mdestroy');
-    const dc = g('destroy-confirm'); if (dc) dc.value='';
+    const dp = g('destroy-pw'); if (dp) dp.value='';
     const svd = g('svd'); if (svd) svd.textContent='{}';
     const wl = g('wlist'); if (wl) wl.innerHTML='';
-    const wc = g('wcnt'); if (wc) wc.textContent='0';
+    const wc2 = g('wcnt'); if (wc2) wc2.textContent='0';
     const sg = g('sgrid'); if (sg) sg.innerHTML='';
     const xv = g('xpub-val'); if (xv) xv.textContent='—';
     const nt = g('notes'); if (nt) nt.value='';
@@ -1813,15 +2085,14 @@ async function doDestroy() {
     if (g('mpill')) g('mpill').textContent='🔒 Bloqueada';
     if (g('upw')) g('upw').value='';
     if (g('file-info')) g('file-info').style.display='none';
-    updCreateTabState();
-    showTab(1);
-
-    toast('Bóveda destruida. Abre el archivo ArkánumSeed-limpio.html descargado.', 'ok');
+    updateNewVaultPanel();
+    showTab(0);
+    toast('Bóveda destruida. Abre ArkánumSeed-limpio.html.', 'ok');
   } catch(e) {
-    console.error('Error al destruir bóveda:', e);
-    toast('Error al destruir bóveda: ' + (e && e.message ? e.message : 'desconocido'), 'err');
+    console.error('Error al destruir:', e);
+    toast('Error al destruir: ' + (e && e.message ? e.message : 'desconocido'), 'err');
   } finally {
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💣 Destruir y descargar HTML limpio'; }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '💣 Destruir bóveda'; }
   }
 }
 
